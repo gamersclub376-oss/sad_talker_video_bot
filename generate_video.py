@@ -1,4 +1,8 @@
-import os, sys
+import matplotlib
+matplotlib.use("Agg")  # ✅ Fix backend issue for Colab/Python script runs
+
+import os
+import sys
 from moviepy.editor import VideoFileClip, concatenate_videoclips, AudioFileClip, CompositeAudioClip
 from gtts import gTTS
 from pydub import AudioSegment
@@ -20,7 +24,7 @@ genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel("gemini-pro")
 prompt = f"{topic} पर 150-200 शब्दों का एक छोटा, रोचक और कहानी जैसा स्क्रिप्ट लिखो, जो 30-40 सेकंड के टेस्ट वीडियो के लिए उपयुक्त हो।"
 response = model.generate_content(prompt)
-script_text = response.text
+script_text = response.text if hasattr(response, "text") else str(response)
 with open("/content/script.txt", "w", encoding="utf-8") as f:
     f.write(script_text)
 print("✅ Script ready.")
@@ -47,8 +51,10 @@ print(f"✅ {len(chunks)} chunks created.")
 print("🎬 Animating video chunks...")
 final_clips = []
 for chunk in chunks:
-    os.system(f"python /content/SadTalker/inference.py --driven_audio {chunk} --source_image {CHARACTER_IMG} --result_dir /content/results --still --preprocess full > /dev/null 2>&1")
-    latest_clip = sorted(os.listdir("/content/results"))[-1]
+    os.system(f"python3 /content/SadTalker/inference.py --driven_audio {chunk} --source_image {CHARACTER_IMG} --result_dir /content/results --still --preprocess full > /dev/null 2>&1")
+    # Get latest generated video file
+    result_files = sorted(os.listdir("/content/results"), key=lambda x: os.path.getmtime(os.path.join("/content/results", x)))
+    latest_clip = result_files[-1]
     clip = VideoFileClip(f"/content/results/{latest_clip}").resize(height=OUTPUT_RESOLUTION)
     clip = clip.set_audio(AudioFileClip(chunk))
     final_clips.append(clip)
@@ -56,7 +62,10 @@ print("✅ Animation complete.")
 
 # ==== 5. Merge Video ====
 print("🔗 Merging chunks...")
-merged_video = concatenate_videoclips(final_clips)
+if len(final_clips) == 1:
+    merged_video = final_clips[0]
+else:
+    merged_video = concatenate_videoclips(final_clips, method="compose")
 merged_video.write_videofile("/content/merged.mp4", codec="libx264", fps=25)
 print("✅ Video merged.")
 
