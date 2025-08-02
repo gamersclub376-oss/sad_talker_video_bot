@@ -5,7 +5,7 @@ from pydub import AudioSegment
 import google.generativeai as genai
 
 # ==== CONFIG ====
-GEMINI_API_KEY = "YOUR_GEMINI_API_KEY"  # Replace with your real API key
+GEMINI_API_KEY = "AIzaSyAyczafMScf80EmhUJ11E4KPIIKr1LCx50"  # Replace with your actual API key
 CHUNK_DURATION = 10
 OUTPUT_RESOLUTION = 480
 CHARACTER_IMG = "/content/character.jpg"
