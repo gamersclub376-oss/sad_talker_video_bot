@@ -1,7 +1,8 @@
-import matplotlib
-matplotlib.use("Agg")  # ✅ Fix backend issue for Colab/Python script runs
-
 import os
+os.environ["MPLBACKEND"] = "Agg"  # ✅ Fix backend issue in Colab
+import matplotlib
+matplotlib.use("Agg")
+
 import sys
 from moviepy.editor import VideoFileClip, concatenate_videoclips, AudioFileClip, CompositeAudioClip
 from gtts import gTTS
@@ -9,14 +10,14 @@ from pydub import AudioSegment
 import google.generativeai as genai
 
 # ==== CONFIG ====
-GEMINI_API_KEY = "AIzaSyAyczafMScf80EmhUJ11E4KPIIKr1LCx50"  # Replace with your actual API key
+GEMINI_API_KEY = "AIzaSyAyczafMScf80EmhUJ11E4KPIIKr1LCx50"
 CHUNK_DURATION = 10
 OUTPUT_RESOLUTION = 480
 CHARACTER_IMG = "/content/character.jpg"
 BGM_FILE = "/content/bg_music.mp3"
 
 # ==== FIXED TOPIC ====
-topic = "विमानों का विकास"  # Evolution of Airplane in Hindi
+topic = "विमानों का विकास"
 
 # ==== 1. Generate Script ====
 print(f"📝 Generating Hindi script for topic: {topic}")
@@ -52,20 +53,19 @@ print("🎬 Animating video chunks...")
 final_clips = []
 for chunk in chunks:
     os.system(f"python3 /content/SadTalker/inference.py --driven_audio {chunk} --source_image {CHARACTER_IMG} --result_dir /content/results --still --preprocess full > /dev/null 2>&1")
-    # Get latest generated video file
-    result_files = sorted(os.listdir("/content/results"), key=lambda x: os.path.getmtime(os.path.join("/content/results", x)))
+    result_files = sorted(
+        [os.path.join("/content/results", f) for f in os.listdir("/content/results")],
+        key=os.path.getmtime
+    )
     latest_clip = result_files[-1]
-    clip = VideoFileClip(f"/content/results/{latest_clip}").resize(height=OUTPUT_RESOLUTION)
+    clip = VideoFileClip(latest_clip).resize(height=OUTPUT_RESOLUTION)
     clip = clip.set_audio(AudioFileClip(chunk))
     final_clips.append(clip)
 print("✅ Animation complete.")
 
 # ==== 5. Merge Video ====
 print("🔗 Merging chunks...")
-if len(final_clips) == 1:
-    merged_video = final_clips[0]
-else:
-    merged_video = concatenate_videoclips(final_clips, method="compose")
+merged_video = final_clips[0] if len(final_clips) == 1 else concatenate_videoclips(final_clips, method="compose")
 merged_video.write_videofile("/content/merged.mp4", codec="libx264", fps=25)
 print("✅ Video merged.")
 
@@ -86,3 +86,4 @@ os.system("ffmpeg -hide_banner -loglevel error -i /content/final_with_music.mp4 
 print("✅ Subtitles added.")
 
 print("🎉 Video ready: /content/final_video.mp4")
+
